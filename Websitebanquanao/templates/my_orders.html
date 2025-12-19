@@ -1,0 +1,73 @@
+
+{% extends "base.html" %}
+
+{% block title %}Đơn hàng của tôi - Fashion Store{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Đơn hàng của tôi</h1>
+
+    {% if orders %}
+    <div class="space-y-6">
+        {% for order in orders %}
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                <div>
+                    <h3 class="font-semibold text-lg">Đơn hàng #{{ order.id[:8] }}</h3>
+                    <p class="text-gray-600 text-sm">Ngày đặt: {{ order.created_at }}</p>
+                </div>
+                <div class="flex items-center space-x-4 mt-2 sm:mt-0">
+                    <span class="px-3 py-1 rounded-full text-sm font-medium 
+                        {% if order.status == 'completed' %}bg-green-100 text-green-800
+                        {% elif order.status == 'pending' %}bg-yellow-100 text-yellow-800
+                        {% elif order.status == 'shipping' %}bg-blue-100 text-blue-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ order.status|title }}
+                    </span>
+                    <span class="font-bold text-lg">{{ format_price(order.total) }}</span>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 pt-4">
+                {% for item in order.order_items %}
+                <div class="flex items-center mb-4 last:mb-0">
+                    <img src="{{ item.image }}" alt="{{ item.name }}" class="w-16 h-16 object-cover rounded-lg">
+                    <div class="flex-1 ml-4">
+                        <h4 class="font-semibold">{{ item.name }}</h4>
+                        <p class="text-sm text-gray-600">{{ item.color }} / {{ item.size }}</p>
+                        <p class="text-sm text-gray-600">Số lượng: {{ item.quantity or item.qty or 1 }}</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-semibold mb-2">{{ format_price(item.price * (item.quantity or item.qty or 1)) }}</div>
+                        {% if order.status == 'completed' %}
+                        <a href="{{ url_for('product_detail', pid=item.product_id or item.id) }}#reviews-section" 
+                           class="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 inline-block">
+                            <i class="fas fa-star mr-1"></i>Đánh giá
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="flex justify-end mt-4">
+                <a href="{{ url_for('order_detail', order_id=order.id) }}" 
+                   class="text-red-600 hover:text-red-700 font-semibold">
+                    Xem chi tiết →
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-16">
+        <i class="fas fa-box-open text-6xl text-gray-300 mb-4"></i>
+        <h2 class="text-2xl font-semibold text-gray-600 mb-4">Chưa có đơn hàng</h2>
+        <p class="text-gray-500 mb-8">Hãy mua sắm và tận hưởng những ưu đãi từ chúng tôi</p>
+        <a href="{{ url_for('products') }}" class="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold">
+            <i class="fas fa-shopping-bag mr-2"></i>Mua sắm ngay
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

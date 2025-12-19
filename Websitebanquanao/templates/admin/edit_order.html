@@ -1,0 +1,293 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Chỉnh sửa đơn hàng{% endblock %}
+
+{% block title %}Chỉnh sửa đơn hàng #{{ order.id[:8] }} - Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl">
+    <div class="mb-6">
+        <a href="/admin/orders" class="text-indigo-600 hover:text-indigo-700">
+            <i class="fas fa-arrow-left mr-2"></i>Quay lại danh sách đơn hàng
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <h2 class="text-2xl font-bold mb-2">Đơn hàng #{{ order.id[:8] }}</h2>
+        <p class="text-gray-600">Ngày tạo: {{ order.created_at }}</p>
+    </div>
+
+    <form method="POST" id="edit-order-form" class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Customer Info -->
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <h3 class="text-xl font-bold mb-4">Thông tin khách hàng</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email khách hàng</label>
+                        <input type="text" value="{{ order.user_email }}" readonly
+                               class="w-full border border-gray-300 bg-gray-50 rounded-lg px-4 py-2">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Họ và tên *</label>
+                        <input type="text" name="customer_name" id="customer_name" required
+                               value="{{ order.shipping_info.name }}"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Số điện thoại *</label>
+                        <input type="tel" name="customer_phone" id="customer_phone" required
+                               value="{{ order.shipping_info.phone }}"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Địa chỉ giao hàng *</label>
+                        <textarea name="customer_address" id="customer_address" rows="3" required
+                                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ order.shipping_info.address }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Status & Payment -->
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <h3 class="text-xl font-bold mb-4">Trạng thái đơn hàng</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Trạng thái đơn hàng *</label>
+                        <select name="status" required
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Chờ xử lý</option>
+                            <option value="shipping" {% if order.status == 'shipping' %}selected{% endif %}>Đang giao</option>
+                            <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Hoàn thành</option>
+                            <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Đã hủy</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phương thức thanh toán *</label>
+                        <select name="payment_method" required
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="cod" {% if order.payment_method == 'cod' %}selected{% endif %}>COD - Thanh toán khi nhận hàng</option>
+                            <option value="banking" {% if order.payment_method == 'banking' %}selected{% endif %}>Chuyển khoản ngân hàng</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Trạng thái thanh toán *</label>
+                        <select name="payment_status" required
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="pending" {% if order.payment_status == 'pending' %}selected{% endif %}>Chưa thanh toán</option>
+                            <option value="paid" {% if order.payment_status == 'paid' %}selected{% endif %}>Đã thanh toán</option>
+                            <option value="cod" {% if order.payment_status == 'cod' %}selected{% endif %}>COD</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
+                        <textarea name="notes" rows="3"
+                                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ order.notes }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Section -->
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Sản phẩm trong đơn hàng</h3>
+                <button type="button" onclick="openProductModal()" 
+                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold">
+                    <i class="fas fa-plus mr-2"></i>Thêm sản phẩm
+                </button>
+            </div>
+            
+            <input type="hidden" name="products" id="products-json">
+            <div id="selected-products" class="space-y-3"></div>
+            
+            <!-- Order Summary -->
+            <div class="mt-6 pt-6 border-t">
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span>Tạm tính:</span>
+                        <span id="subtotal">{{ format_price(order.subtotal) }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Phí vận chuyển:</span>
+                        <span id="shipping">{{ format_price(order.shipping) }}</span>
+                    </div>
+                    {% if order.voucher_discount > 0 %}
+                    <div class="flex justify-between text-green-600">
+                        <span>Giảm giá:</span>
+                        <span>-{{ format_price(order.voucher_discount) }}</span>
+                    </div>
+                    {% endif %}
+                    <hr>
+                    <div class="flex justify-between text-lg font-bold">
+                        <span>Tổng cộng:</span>
+                        <span id="total">{{ format_price(order.total) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-4">
+            <button type="submit" 
+                    class="flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold">
+                <i class="fas fa-save mr-2"></i>Lưu thay đổi
+            </button>
+            <a href="/admin/orders" 
+               class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition-colors font-semibold text-center">
+                <i class="fas fa-times mr-2"></i>Hủy
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Product Selection Modal -->
+<div id="product-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-2xl font-bold">Chọn sản phẩm</h3>
+            <button type="button" onclick="closeProductModal()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for product in products %}
+            <div class="border rounded-lg p-4 hover:shadow-lg transition cursor-pointer"
+                 onclick="selectProduct('{{ product.id }}', '{{ product.name }}', {{ product.price }}, '{{ product.image }}')">
+                <div class="flex items-center">
+                    <img src="{{ product.image }}" alt="{{ product.name }}" class="w-20 h-20 object-cover rounded-lg mr-4">
+                    <div class="flex-1">
+                        <h4 class="font-semibold">{{ product.name }}</h4>
+                        <p class="text-indigo-600 font-bold">{{ format_price(product.price) }}</p>
+                        <p class="text-sm text-gray-600">Kho: {{ product.stock }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize with existing products
+let selectedProducts = {{ order.order_items|tojson }};
+const voucherDiscount = {{ order.voucher_discount }};
+
+// Update display on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateProductList();
+});
+
+function openProductModal() {
+    document.getElementById('product-modal').classList.remove('hidden');
+}
+
+function closeProductModal() {
+    document.getElementById('product-modal').classList.add('hidden');
+}
+
+function selectProduct(id, name, price, image) {
+    // Check if product already exists
+    const existingIndex = selectedProducts.findIndex(p => p.id === id);
+    
+    if (existingIndex !== -1) {
+        // Increase quantity
+        selectedProducts[existingIndex].qty += 1;
+    } else {
+        // Add new product
+        selectedProducts.push({
+            id: id,
+            name: name,
+            price: price,
+            image: image,
+            qty: 1,
+            color: 'Mặc định',
+            size: 'M'
+        });
+    }
+    
+    updateProductList();
+    closeProductModal();
+}
+
+function removeProduct(index) {
+    selectedProducts.splice(index, 1);
+    updateProductList();
+}
+
+function updateQuantity(index, delta) {
+    selectedProducts[index].qty += delta;
+    if (selectedProducts[index].qty < 1) {
+        selectedProducts[index].qty = 1;
+    }
+    updateProductList();
+}
+
+function updateProductList() {
+    const container = document.getElementById('selected-products');
+    
+    if (selectedProducts.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-8">Chưa có sản phẩm nào. Nhấn "Thêm sản phẩm" để chọn.</p>';
+    } else {
+        container.innerHTML = selectedProducts.map((product, index) => `
+            <div class="flex items-center space-x-4 border rounded-lg p-4">
+                <img src="${product.image}" alt="${product.name}" class="w-16 h-16 object-cover rounded-lg">
+                <div class="flex-1">
+                    <h4 class="font-semibold">${product.name}</h4>
+                    <p class="text-indigo-600 font-bold">${formatPrice(product.price)}</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="updateQuantity(${index}, -1)" 
+                            class="w-8 h-8 bg-gray-200 rounded-lg hover:bg-gray-300">-</button>
+                    <span class="w-12 text-center font-semibold">${product.qty}</span>
+                    <button type="button" onclick="updateQuantity(${index}, 1)" 
+                            class="w-8 h-8 bg-gray-200 rounded-lg hover:bg-gray-300">+</button>
+                </div>
+                <div class="font-bold">${formatPrice(product.price * product.qty)}</div>
+                <button type="button" onclick="removeProduct(${index})" 
+                        class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+    
+    updateTotals();
+}
+
+function updateTotals() {
+    const subtotal = selectedProducts.reduce((sum, p) => sum + (p.price * p.qty), 0);
+    const shipping = subtotal >= 500000 ? 0 : 30000;
+    const total = subtotal + shipping - voucherDiscount;
+    
+    document.getElementById('subtotal').textContent = formatPrice(subtotal);
+    document.getElementById('shipping').textContent = formatPrice(shipping);
+    document.getElementById('total').textContent = formatPrice(total);
+    
+    // Update hidden input
+    document.getElementById('products-json').value = JSON.stringify(selectedProducts);
+}
+
+function formatPrice(price) {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+}
+
+// Form validation
+document.getElementById('edit-order-form').addEventListener('submit', function(e) {
+    if (selectedProducts.length === 0) {
+        e.preventDefault();
+        alert('Đơn hàng phải có ít nhất 1 sản phẩm');
+        return false;
+    }
+});
+</script>
+{% endblock %}

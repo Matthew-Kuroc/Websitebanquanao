@@ -1,0 +1,84 @@
+
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Sản phẩm{% endblock %}
+
+{% block title %}Quản lý sản phẩm - Fashion Store{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <p class="text-gray-600">Tổng cộng {{ products|length }} sản phẩm</p>
+    <a href="/admin/add-product" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors font-semibold">
+        <i class="fas fa-plus mr-2"></i>Thêm sản phẩm
+    </a>
+</div>
+
+<div class="bg-white rounded-2xl shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-left py-4 px-6">Sản phẩm</th>
+                        <th class="text-left py-4 px-6">Danh mục</th>
+                        <th class="text-left py-4 px-6">Giá</th>
+                        <th class="text-left py-4 px-6">Tồn kho</th>
+                        <th class="text-left py-4 px-6">Đã bán</th>
+                        <th class="text-left py-4 px-6">Đánh giá</th>
+                        <th class="text-left py-4 px-6">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr class="border-b border-gray-200 hover:bg-gray-50">
+                        <td class="py-4 px-6">
+                            <div class="flex items-center">
+                                <img src="{{ product.image }}" alt="{{ product.name }}" class="w-12 h-12 object-cover rounded-lg mr-3">
+                                <div>
+                                    <div class="font-semibold">{{ product.name }}</div>
+                                    <div class="text-sm text-gray-600">{{ product.id[:8] }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6">{{ product.category }}</td>
+                        <td class="py-4 px-6">{{ format_price(product.price) }}</td>
+                        <td class="py-4 px-6">{{ product.stock }}</td>
+                        <td class="py-4 px-6">{{ product.sold }}</td>
+                        <td class="py-4 px-6">
+                            <div class="flex items-center">
+                                <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                <span>{{ product.rating }}</span>
+                                <span class="text-gray-500 ml-1">({{ product.reviews }})</span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6">
+                            <a href="/admin/edit-product/{{ product.id }}" class="text-blue-600 hover:text-blue-800 mr-3">
+                                <i class="fas fa-edit"></i> Sửa
+                            </a>
+                            {% if session.user.role == 'admin' %}
+                            <button onclick="deleteProduct('{{ product.id }}', '{{ product.name }}')"
+                                    class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i> Xóa
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<!-- Delete Product Form -->
+<form id="delete-product-form" method="POST" action="/admin/delete-product" style="display:none;">
+    <input type="hidden" name="product_id" id="delete-product-id">
+</form>
+
+<script>
+function deleteProduct(productId, productName) {
+    if (confirm('Bạn có chắc chắn muốn xóa sản phẩm "' + productName + '"?')) {
+        document.getElementById('delete-product-id').value = productId;
+        document.getElementById('delete-product-form').submit();
+    }
+}
+</script>
+{% endblock %}

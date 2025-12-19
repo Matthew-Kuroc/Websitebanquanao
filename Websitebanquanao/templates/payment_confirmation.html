@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Xác nhận đơn hàng - Fashion Store{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-sm p-8">
+            <!-- Success Icon -->
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+                    <i class="fas fa-check text-4xl text-green-600"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-green-600 mb-2">Đặt hàng thành công!</h1>
+                <p class="text-gray-600">Cảm ơn bạn đã mua sắm tại Fashion Store</p>
+            </div>
+
+            <!-- Order Info -->
+            <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                <h3 class="text-xl font-bold mb-4">Thông tin đơn hàng</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                        <span class="text-gray-600">Mã đơn hàng:</span>
+                        <span class="font-bold text-lg">#{{ order.id[:8] }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                        <span class="text-gray-600">Tổng tiền:</span>
+                        <span class="font-bold text-red-600 text-xl">{{ format_price(order.total) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                        <span class="text-gray-600">Phương thức thanh toán:</span>
+                        <span class="font-semibold">
+                            {% if order.payment_method == 'cod' %}
+                            <i class="fas fa-money-bill-wave text-green-600 mr-1"></i>Thanh toán khi nhận hàng (COD)
+                            {% else %}
+                            <i class="fas fa-university text-blue-600 mr-1"></i>Chuyển khoản ngân hàng
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-gray-600">Địa chỉ giao hàng:</span>
+                        <div class="text-right">
+                            <p class="font-semibold">{{ order.shipping_info.name }}</p>
+                            <p class="text-sm text-gray-600">{{ order.shipping_info.phone }}</p>
+                            <p class="text-sm text-gray-600">{{ order.shipping_info.address }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Instructions -->
+            {% if order.payment_method == 'cod' %}
+            <div class="bg-yellow-50 rounded-lg p-6 mb-6 border border-yellow-200">
+                <h3 class="font-bold text-lg mb-3 flex items-center">
+                    <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                    Lưu ý thanh toán
+                </h3>
+                <ul class="space-y-2 text-sm text-gray-700">
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-600 mt-1 mr-2"></i>
+                        <span>Vui lòng chuẩn bị <strong class="text-red-600">{{ format_price(order.total) }}</strong> tiền mặt khi nhận hàng</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-600 mt-1 mr-2"></i>
+                        <span>Bạn có thể kiểm tra hàng trước khi thanh toán</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-600 mt-1 mr-2"></i>
+                        <span>Đơn hàng sẽ được giao trong vòng 2-3 ngày làm việc</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-600 mt-1 mr-2"></i>
+                        <span>Vui lòng giữ số điện thoại thông suốt để shipper liên hệ</span>
+                    </li>
+                </ul>
+            </div>
+            {% else %}
+            <div class="bg-blue-50 rounded-lg p-6 mb-6 border border-blue-200">
+                <h3 class="font-bold text-lg mb-3 flex items-center">
+                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                    Lưu ý thanh toán
+                </h3>
+                <ul class="space-y-2 text-sm text-gray-700">
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-600 mt-1 mr-2"></i>
+                        <span>Vui lòng hoàn tất thanh toán trong vòng 15 phút</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-600 mt-1 mr-2"></i>
+                        <span>Hệ thống sẽ tự động xác nhận sau khi nhận được thanh toán</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-600 mt-1 mr-2"></i>
+                        <span>Đơn hàng sẽ được giao sau khi xác nhận thanh toán thành công</span>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+                {% if order.payment_method != 'cod' %}
+                <a href="{{ url_for('payment_page', order_id=order.id) }}" 
+                   class="block w-full bg-blue-600 text-white text-center px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg">
+                    <i class="fas fa-credit-card mr-2"></i>Tiếp tục thanh toán
+                </a>
+                {% endif %}
+                
+                <a href="{{ url_for('order_detail', order_id=order.id) }}" 
+                   class="block w-full {% if order.payment_method == 'cod' %}bg-green-600 hover:bg-green-700{% else %}bg-indigo-600 hover:bg-indigo-700{% endif %} text-white text-center px-8 py-4 rounded-lg transition-colors font-semibold text-lg">
+                    <i class="fas fa-receipt mr-2"></i>Xem chi tiết đơn hàng
+                </a>
+                
+                <a href="{{ url_for('my_orders') }}" 
+                   class="block w-full bg-gray-200 text-gray-700 text-center px-8 py-4 rounded-lg hover:bg-gray-300 transition-colors font-semibold">
+                    <i class="fas fa-list mr-2"></i>Xem tất cả đơn hàng
+                </a>
+                
+                <a href="{{ url_for('products') }}" 
+                   class="block w-full border-2 border-gray-300 text-gray-700 text-center px-8 py-4 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
+                    <i class="fas fa-shopping-bag mr-2"></i>Tiếp tục mua sắm
+                </a>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="mt-6 text-center text-sm text-gray-500">
+                <p class="mb-2">
+                    <i class="fas fa-headset mr-1"></i>
+                    Cần hỗ trợ? Liên hệ: <a href="tel:1900xxxx" class="text-indigo-600 hover:underline font-semibold">1900.xxxx</a>
+                </p>
+                <p>
+                    <i class="fas fa-envelope mr-1"></i>
+                    Email: <a href="mailto:support@fashionstore.com" class="text-indigo-600 hover:underline">support@fashionstore.com</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

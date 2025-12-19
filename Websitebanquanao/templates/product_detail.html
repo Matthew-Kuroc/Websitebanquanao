@@ -1,0 +1,956 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - Fashion Store{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-2xl shadow-sm p-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <!-- Product Images -->
+            <div>
+                <div class="mb-4">
+                    <img src="{{ product.image }}" alt="{{ product.name }}" 
+                         class="w-full h-96 object-cover rounded-2xl">
+                </div>
+                <div class="grid grid-cols-4 gap-4">
+                    {% for img in product.images %}
+                    <img src="{{ img }}" alt="{{ product.name }}" 
+                         class="w-full h-24 object-cover rounded-lg cursor-pointer border-2 border-transparent hover:border-red-500">
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Product Info -->
+            <div>
+                <div class="mb-6">
+                    <span class="text-sm font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full">{{ product.category }}</span>
+                    <h1 class="text-3xl font-bold text-gray-900 mt-4 mb-2">{{ product.name }}</h1>
+                    
+                    <div class="flex items-center mb-4">
+                        <div class="star-rating text-lg mr-3">
+                            {% for i in range(5) %}
+                                {% if i < product.rating|int %}
+                                    <i class="fas fa-star"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <span class="text-gray-600">({{ product.reviews }} đánh giá)</span>
+                        <span class="mx-3 text-gray-300">•</span>
+                        <span class="text-green-600 font-medium">Đã bán {{ product.sold }}</span>
+                    </div>
+
+                    <div class="flex items-baseline mb-6">
+                        <span class="text-3xl font-bold text-red-600">{{ format_price(product.price) }}</span>
+                        {% if product.old_price > product.price %}
+                        <span class="text-xl text-gray-400 line-through ml-3">{{ format_price(product.old_price) }}</span>
+                        <span class="bg-red-100 text-red-600 px-2 py-1 rounded text-sm font-bold ml-3">
+                            Tiết kiệm {{ format_price(product.old_price - product.price) }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <p class="text-gray-700 leading-relaxed">{{ product.description }}</p>
+                </div>
+
+                <!-- Product Options -->
+                <form method="post" action="{{ url_for('add_to_cart') }}" class="space-y-6">
+                    <input type="hidden" name="pid" value="{{ product.id }}">
+                    
+                    <!-- Color Selection -->
+                    <div>
+                        <h3 class="font-semibold text-lg mb-3">Màu sắc</h3>
+                        <div class="flex flex-wrap gap-3">
+                            {% for color in product.colors %}
+                            <label class="flex items-center">
+                                <input type="radio" name="color" value="{{ color }}" 
+                                       class="sr-only peer color-option" 
+                                       {% if loop.first %}checked{% endif %}
+                                       data-color="{{ color }}">
+                                <div class="px-4 py-2 border-2 border-gray-200 rounded-lg peer-checked:border-red-500 peer-checked:bg-red-50 cursor-pointer transition-colors">
+                                    {{ color }}
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Size Selection -->
+                    <div>
+                        <h3 class="font-semibold text-lg mb-3">Kích thước</h3>
+                        <div class="flex flex-wrap gap-3">
+                            {% for size in product.sizes %}
+                            <label class="flex items-center">
+                                <input type="radio" name="size" value="{{ size }}" 
+                                       class="sr-only peer" {% if loop.first %}checked{% endif %}>
+                                <div class="px-4 py-2 border-2 border-gray-200 rounded-lg peer-checked:border-red-500 peer-checked:bg-red-50 cursor-pointer transition-colors">
+                                    {{ size }}
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div>
+                        <h3 class="font-semibold text-lg mb-3">Số lượng</h3>
+                        <div class="flex items-center">
+                            <button type="button" onclick="decreaseQty()" class="w-12 h-12 border border-gray-300 rounded-l-lg flex items-center justify-center hover:bg-gray-50">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" name="qty" id="qty" value="1" min="1" max="{{ product.stock }}" 
+                                   class="w-20 h-12 border-t border-b border-gray-300 text-center focus:outline-none">
+                            <button type="button" onclick="increaseQty()" class="w-12 h-12 border border-gray-300 rounded-r-lg flex items-center justify-center hover:bg-gray-50">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <span class="ml-4 text-gray-600">Còn {{ product.stock }} sản phẩm</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 pt-6">
+                        <button type="submit"
+                                class="flex-1 bg-red-600 text-white py-4 px-8 rounded-lg hover:bg-red-700 transition-colors font-semibold text-lg flex items-center justify-center">
+                            <i class="fas fa-cart-plus mr-3"></i>
+                            Thêm vào giỏ hàng
+                        </button>
+                        {% set in_wishlist = product.id in get_wishlist() %}
+
+                        <button type="button" onclick="toggleWishlist(this, '{{ product.id }}')"
+                                class="px-8 py-4 border-2 rounded-lg transition-colors font-semibold flex items-center justify-center
+                                {% if in_wishlist %}
+                                    border-red-600 text-red-600 bg-red-50
+                                {% else %}
+                                    border-gray-200 text-gray-400 hover:border-red-500 hover:text-red-500
+                                {% endif %}">
+                            <i class="{% if in_wishlist %}fas{% else %}far{% endif %} fa-heart mr-3 text-xl"></i>
+                            <span>{% if in_wishlist %}Đã yêu thích{% else %}Yêu thích{% endif %}</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Product Features -->
+                <div class="mt-8 pt-8 border-t border-gray-200">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <div class="text-center">
+                            <i class="fas fa-shipping-fast text-2xl text-red-600 mb-2"></i>
+                            <p class="font-semibold">Miễn phí vận chuyển</p>
+                            <p class="text-sm text-gray-600">Cho đơn từ 500.000đ</p>
+                        </div>
+                        <div class="text-center">
+                            <i class="fas fa-shield-alt text-2xl text-green-600 mb-2"></i>
+                            <p class="font-semibold">Bảo hành chất lượng</p>
+                            <p class="text-sm text-gray-600">Đổi trả trong 30 ngày</p>
+                        </div>
+                        <div class="text-center">
+                            <i class="fas fa-headset text-2xl text-blue-600 mb-2"></i>
+                            <p class="font-semibold">Hỗ trợ 24/7</p>
+                            <p class="text-sm text-gray-600">Tư vấn nhiệt tình</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    {% if related_products %}
+    <div class="mt-16">
+        <h2 class="text-2xl font-bold mb-8">Sản phẩm liên quan</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {% for related in related_products %}
+            <div class="bg-white rounded-2xl shadow-md overflow-hidden product-card">
+                <div class="relative">
+                    {% if related.old_price > related.price %}
+                    <span class="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
+                        Sale
+                    </span>
+                    {% endif %}
+                    <a href="{{ url_for('product_detail', pid=related.id) }}">
+                        <img src="{{ related.image }}" alt="{{ related.name }}" 
+                             class="w-full h-64 object-cover hover:scale-105 transition-transform duration-300">
+                    </a>
+                </div>
+                <div class="p-6">
+                    <h3 class="font-semibold text-lg mb-2 hover:text-red-600 transition-colors">
+                        <a href="{{ url_for('product_detail', pid=related.id) }}">{{ related.name }}</a>
+                    </h3>
+                    <div class="flex items-center justify-between">
+                        <div class="font-bold text-red-600">{{ format_price(related.price) }}</div>
+                        {% if related.old_price > related.price %}
+                        <div class="text-sm text-gray-400 line-through">{{ format_price(related.old_price) }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Product Reviews Section -->
+    <div class="mt-16 bg-white rounded-2xl shadow-sm p-8" id="reviews-section">
+        <h2 class="text-2xl font-bold mb-8">Đánh giá sản phẩm</h2>
+        
+        <!-- Rating Summary -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 p-6 bg-gray-50 rounded-xl">
+            <div class="text-center">
+                <div class="text-5xl font-bold text-red-600 mb-2" id="avg-rating">{{ avg_rating }}</div>
+                <div class="star-rating text-2xl mb-2" id="avg-stars">
+                    {% for i in range(5) %}
+                        {% if i < avg_rating|int %}
+                            <i class="fas fa-star"></i>
+                        {% else %}
+                            <i class="far fa-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="text-gray-600"><span id="total-reviews">{{ total_reviews }}</span> đánh giá</div>
+            </div>
+            
+            <div class="lg:col-span-2">
+                <div id="rating-bars" class="space-y-2">
+                    {% for i in range(5, 0, -1) %}
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-medium w-12">{{ i }} <i class="fas fa-star text-yellow-400 text-xs"></i></span>
+                        <div class="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
+                            {% set count = rating_stats.get(i|string, 0) %}
+                            {% set percentage = (count / total_reviews * 100) if total_reviews > 0 else 0 %}
+                            <div class="bg-yellow-400 h-full rounded-full rating-bar-{{ i }}" style="width: {{ percentage }}%"></div>
+                        </div>
+                        <span class="text-sm text-gray-600 w-12 text-right rating-count-{{ i }}">{{ rating_stats.get(i|string, 0) }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Write Review Button -->
+        {% if user_reviewed %}
+        <div class="mb-8 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p class="text-green-800">
+                <i class="fas fa-check-circle mr-2"></i>
+                Bạn đã đánh giá sản phẩm này rồi
+            </p>
+        </div>
+        {% elif can_review %}
+        <div class="mb-8">
+            <button onclick="showReviewForm()" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors">
+                <i class="fas fa-edit mr-2"></i>Viết đánh giá
+            </button>
+        </div>
+
+        <!-- Review Form (Hidden by default) -->
+        <div id="review-form" class="hidden mb-8 p-6 bg-gray-50 rounded-xl">
+            <h3 class="text-lg font-bold mb-4">Đánh giá của bạn</h3>
+            <form id="submit-review-form" method="POST" action="/product/{{ product.id }}/review" enctype="multipart/form-data">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Đánh giá <span class="text-red-500">*</span></label>
+                    <div class="flex gap-2 text-3xl" id="star-rating-container">
+                        {% for i in range(1, 6) %}
+                        <i class="far fa-star cursor-pointer hover:text-yellow-400 review-star text-gray-300" data-rating="{{ i }}"></i>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="rating" id="rating-input" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Nhận xét</label>
+                    <textarea name="comment" rows="4" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500" placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm..."></textarea>
+                </div>
+
+                {% if purchased_item %}
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label>Size đã mua</label>
+                        <div class="border p-2 bg-gray-100 rounded">
+                            {{ purchased_item.size }}
+                        </div>
+                        <input type="hidden" name="size" value="{{ purchased_item.size }}">
+                    </div>
+
+                    <div>
+                        <label>Màu đã mua</label>
+                        <div class="border p-2 bg-gray-100 rounded">
+                            {{ purchased_item.color }}
+                        </div>
+                        <input type="hidden" name="color" value="{{ purchased_item.color }}">
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Hình ảnh (tối đa 5 ảnh)</label>
+                    <input type="file" name="images" multiple accept="image/*" class="w-full px-4 py-2 border rounded-lg" onchange="previewImages(this)">
+                    <div id="image-preview" class="grid grid-cols-5 gap-2 mt-2"></div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">
+                        <i class="fas fa-paper-plane mr-2"></i>Gửi đánh giá
+                    </button>
+                    <button type="button" onclick="hideReviewForm()" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400">
+                        Hủy
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+        
+        {% if not user_reviewed and not can_review %}
+            {% if session.user %}
+            <div class="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p class="text-blue-800">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Bạn cần mua sản phẩm này để có thể đánh giá
+                </p>
+            </div>
+            {% else %}
+            <div class="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-yellow-800">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <a href="/login" class="text-indigo-600 hover:underline font-semibold">Đăng nhập</a> để viết đánh giá
+                </p>
+            </div>
+            {% endif %}
+        {% endif %}
+
+        <!-- Reviews List -->
+        <div class="space-y-6">
+            <h3 class="text-lg font-semibold mb-4">Tất cả đánh giá ({{ total_reviews }})</h3>
+            
+            {% if reviews %}
+                {% for review in reviews %}
+                <div class="border-b pb-6" id="review-{{ review.id }}">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-user text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold">{{ review.user_name }}</div>
+                                <div class="text-sm text-gray-500">{{ review.created_at[:10] }}</div>
+                            </div>
+                        </div>
+                        <div class="text-yellow-400 text-lg">
+                            {% for i in range(review.rating) %}★{% endfor %}{% for i in range(5 - review.rating) %}☆{% endfor %}
+                        </div>
+                    </div>
+                    
+                    {% if review.verified_purchase %}
+                    <span class="inline-block text-xs bg-green-100 text-green-600 px-2 py-1 rounded mb-2">
+                        <i class="fas fa-check-circle mr-1"></i>Đã mua hàng
+                    </span>
+                    {% endif %}
+                    
+                    {% if review.size or review.color %}
+                    <div class="text-sm text-gray-500 mb-2">
+                        {% if review.size %}Size: <span class="font-medium">{{ review.size }}</span>{% endif %}
+                        {% if review.size and review.color %} • {% endif %}
+                        {% if review.color %}Màu: <span class="font-medium">{{ review.color }}</span>{% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <p class="text-gray-700 mb-3">{{ review.comment }}</p>
+                    
+                    {% if review.images %}
+                    <div class="flex gap-2 mb-3">
+                        {% for img in review.images %}
+                        <img src="{{ img }}" class="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-75" 
+                             onclick="window.open('{{ img }}', '_blank')">
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex items-center gap-4 mt-4 text-sm">
+                        {% if session.user %}
+                        <button onclick="toggleLike({{ review.id }})" 
+                                class="flex items-center gap-1 {% if review.user_liked %}text-indigo-600{% else %}text-gray-600{% endif %} hover:text-indigo-600"
+                                id="like-btn-{{ review.id }}">
+                            <i class="{% if review.user_liked %}fas{% else %}far{% endif %} fa-thumbs-up" id="like-icon-{{ review.id }}"></i>
+                            Hữu ích (<span id="helpful-{{ review.id }}">{{ review.helpful_count }}</span>)
+                        </button>
+                        {% else %}
+                        <span class="text-gray-600">
+                            <i class="far fa-thumbs-up mr-1"></i>Hữu ích ({{ review.helpful_count }})
+                        </span>
+                        {% endif %}
+                        
+                        {% if session.user and (session.user.role == 'admin' or session.user.role == 'staff') %}
+                        <button onclick="showReplyForm({{ review.id }})" class="text-indigo-600 hover:text-indigo-800">
+                            <i class="fas fa-reply mr-1"></i>Phản hồi
+                        </button>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Replies -->
+                    {% if review.replies %}
+                        {% for reply in review.replies %}
+                        <div class="mt-4 ml-8 p-4 bg-blue-50 rounded-lg border-l-4 border-indigo-500" id="reply-{{ reply.id }}">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex items-center">
+                                    <i class="fas fa-user-shield text-indigo-600 mr-2"></i>
+                                    <span class="font-semibold text-indigo-900">{{ reply.user_name }}</span>
+                                    <span class="text-xs text-gray-500 ml-2">
+                                        {% if reply.user_role == 'admin' %}Quản trị viên{% else %}Nhân viên{% endif %}
+                                    </span>
+                                    <span class="text-xs text-gray-400 ml-2">{{ reply.created_at[:10] }}</span>
+                                </div>
+                                
+                                {% if session.user and (session.user.email == reply.user_email or session.user.role == 'admin') %}
+                                <div class="flex gap-2">
+                                    <button onclick="editReply({{ reply.id }})" class="text-blue-600 hover:text-blue-800 text-xs">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteReply({{ reply.id }})" class="text-red-600 hover:text-red-800 text-xs">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <p class="text-gray-700" id="reply-text-{{ reply.id }}">{{ reply.comment }}</p>
+                            
+                            <!-- Edit form (hidden) -->
+                            <div id="edit-reply-form-{{ reply.id }}" class="hidden mt-2">
+                                <textarea class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                                          rows="2" id="edit-reply-input-{{ reply.id }}">{{ reply.comment }}</textarea>
+                                <div class="flex gap-2 mt-2">
+                                    <button onclick="saveReplyEdit({{ reply.id }})" class="bg-indigo-600 text-white px-3 py-1 rounded text-sm">
+                                        Lưu
+                                    </button>
+                                    <button onclick="cancelReplyEdit({{ reply.id }})" class="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm">
+                                        Hủy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <!-- Reply Form -->
+                    {% if session.user and (session.user.role == 'admin' or session.user.role == 'staff') %}
+                    <div id="reply-form-{{ review.id }}" class="hidden mt-4 ml-8">
+                        <form onsubmit="submitReply(event, {{ review.id }})" class="bg-gray-50 p-4 rounded-lg">
+                            <textarea name="comment" rows="3" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                                      placeholder="Viết phản hồi..." required></textarea>
+                            <div class="flex gap-2 mt-2">
+                                <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm">
+                                    <i class="fas fa-paper-plane mr-1"></i>Gửi
+                                </button>
+                                <button type="button" onclick="hideReplyForm({{ review.id }})" 
+                                        class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 text-sm">
+                                    Hủy
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                
+                <!-- Pagination -->
+                {% if reviews_pagination.pages > 1 %}
+                <div class="flex justify-center gap-2 mt-8">
+                    {% if reviews_pagination.has_prev %}
+                    <a href="?page={{ reviews_pagination.prev_num }}#reviews-section" 
+                       class="px-4 py-2 border rounded-lg hover:bg-gray-50">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    {% endif %}
+                    
+                    {% for page in range(1, reviews_pagination.pages + 1) %}
+                        {% if page == reviews_pagination.page %}
+                        <span class="px-4 py-2 bg-indigo-600 text-white rounded-lg">{{ page }}</span>
+                        {% else %}
+                        <a href="?page={{ page }}#reviews-section" 
+                           class="px-4 py-2 border rounded-lg hover:bg-gray-50">{{ page }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if reviews_pagination.has_next %}
+                    <a href="?page={{ reviews_pagination.next_num }}#reviews-section" 
+                       class="px-4 py-2 border rounded-lg hover:bg-gray-50">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-comments text-5xl mb-4"></i>
+                    <p>Chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sản phẩm này!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    const productId = '{{ product.id }}';
+    let currentPage = 1;
+    let currentSort = 'recent';
+    let selectedRating = 0;
+
+    // Load reviews on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadReviews();
+    });
+
+    // Sort change handler
+    document.getElementById('sort-reviews').addEventListener('change', function() {
+        currentSort = this.value;
+        currentPage = 1;
+        loadReviews();
+    });
+
+    // Load reviews function
+    function loadReviews(append = false) {
+        fetch(`/product/${productId}/reviews?page=${currentPage}&sort=${currentSort}`)
+            .then(response => response.json())
+            .then(data => {
+                if (!append) {
+                    document.getElementById('reviews-list').innerHTML = '';
+                }
+                
+                // Update rating statistics
+                document.getElementById('avg-rating').textContent = data.avg_rating;
+                document.getElementById('total-reviews').textContent = data.total;
+                
+                // Update rating bars
+                const total = data.total;
+                for (let i = 1; i <= 5; i++) {
+                    const count = data.rating_stats[i.toString()];
+                    const percentage = total > 0 ? (count / total * 100) : 0;
+                    document.querySelector(`.rating-bar-${i}`).style.width = percentage + '%';
+                    document.querySelector(`.rating-count-${i}`).textContent = count;
+                }
+                
+                // Render reviews
+                data.reviews.forEach(review => {
+                    document.getElementById('reviews-list').innerHTML += renderReview(review);
+                });
+                
+                // Show/hide load more button
+                const loadMoreBtn = document.getElementById('load-more-btn');
+                if (data.has_next) {
+                    loadMoreBtn.classList.remove('hidden');
+                } else {
+                    loadMoreBtn.classList.add('hidden');
+                }
+            });
+    }
+
+    // Load more button
+    document.getElementById('load-more-btn').addEventListener('click', function() {
+        currentPage++;
+        loadReviews(true);
+    });
+
+    // Render review HTML
+    function renderReview(review) {
+        const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+        const verifiedBadge = review.verified_purchase ? '<span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded ml-2"><i class="fas fa-check-circle mr-1"></i>Đã mua hàng</span>' : '';
+        
+        const images = review.images && review.images.length > 0 ? 
+            '<div class="flex gap-2 mt-3">' + 
+            review.images.map(img => `<img src="${img}" class="w-20 h-20 object-cover rounded-lg cursor-pointer" onclick="viewImage('${img}')">`).join('') +
+            '</div>' : '';
+        
+        const sizeColor = (review.size || review.color) ? 
+            `<div class="text-sm text-gray-500 mt-2">
+                ${review.size ? `Size: <span class="font-medium">${review.size}</span>` : ''}
+                ${review.size && review.color ? ' • ' : ''}
+                ${review.color ? `Màu: <span class="font-medium">${review.color}</span>` : ''}
+            </div>` : '';
+        
+        const replies = review.replies && review.replies.length > 0 ?
+            review.replies.map(reply => `
+                <div class="mt-4 ml-8 p-4 bg-blue-50 rounded-lg border-l-4 border-indigo-500">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-user-shield text-indigo-600 mr-2"></i>
+                        <span class="font-semibold text-indigo-900">${reply.user_name}</span>
+                        <span class="text-xs text-gray-500 ml-2">${reply.user_role === 'admin' ? 'Quản trị viên' : 'Nhân viên'}</span>
+                        <span class="text-xs text-gray-400 ml-auto">${formatDate(reply.created_at)}</span>
+                    </div>
+                    <p class="text-gray-700">${reply.comment}</p>
+                </div>
+            `).join('') : '';
+        
+        const replyButton = `{{ 'user' in session and (session.user.role == 'admin' or session.user.role == 'staff') }}` === 'True' ?
+            `<button onclick="showReplyForm(${review.id})" class="text-indigo-600 hover:text-indigo-800 text-sm">
+                <i class="fas fa-reply mr-1"></i>Phản hồi
+            </button>` : '';
+        
+        return `
+            <div class="border-b pb-6">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-user text-indigo-600"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold">${review.user_name}</div>
+                            <div class="text-sm text-gray-500">${formatDate(review.created_at)}</div>
+                        </div>
+                    </div>
+                    <div class="text-yellow-400 text-lg">${stars}</div>
+                </div>
+                
+                <div class="flex items-center mb-2">
+                    ${verifiedBadge}
+                </div>
+                
+                ${sizeColor}
+                
+                <p class="text-gray-700 mt-3">${review.comment || ''}</p>
+                
+                ${images}
+                
+                <div class="flex items-center gap-4 mt-4 text-sm">
+                    <button onclick="markHelpful(${review.id})" class="text-gray-600 hover:text-indigo-600">
+                        <i class="far fa-thumbs-up mr-1"></i>Hữu ích (<span id="helpful-${review.id}">${review.helpful_count}</span>)
+                    </button>
+                    ${replyButton}
+                </div>
+                
+                ${replies}
+                
+                <div id="reply-form-${review.id}" class="hidden mt-4 ml-8">
+                    <form onsubmit="submitReply(event, ${review.id})" class="bg-gray-50 p-4 rounded-lg">
+                        <textarea name="comment" rows="3" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Viết phản hồi..." required></textarea>
+                        <div class="flex gap-2 mt-2">
+                            <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm">Gửi</button>
+                            <button type="button" onclick="hideReplyForm(${review.id})" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 text-sm">Hủy</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+    }
+
+    // Format date
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    // Show/hide review form
+    function showReviewForm() {
+        const formDiv = document.getElementById('review-form');
+        formDiv.classList.remove('hidden');
+        
+        // Khởi tạo sự kiện cho các sao sau khi form được hiển thị
+        initStarRating();
+        
+        // Khởi tạo submit handler
+        initReviewFormSubmit();
+    }
+
+    function hideReviewForm() {
+        document.getElementById('review-form').classList.add('hidden');
+        const form = document.getElementById('submit-review-form');
+        if (form) form.reset();
+        selectedRating = 0;
+        updateStarDisplay();
+    }
+    
+    // Initialize review form submit handler
+    let formSubmitInitialized = false;
+    function initReviewFormSubmit() {
+        if (formSubmitInitialized) return; // Prevent multiple bindings
+        
+        const reviewForm = document.getElementById('submit-review-form');
+        if (reviewForm) {
+            reviewForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (!selectedRating) {
+                    alert('Vui lòng chọn số sao đánh giá');
+                    return;
+                }
+                
+                const formData = new FormData(this);
+                
+                fetch(`/product/${productId}/review`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Đánh giá của bạn đã được gửi thành công!');
+                        // Redirect về trang sản phẩm với anchor tới phần reviews
+                        window.location.href = window.location.pathname + '#reviews-section';
+                        window.location.reload();
+                    } else {
+                        alert(data.error || 'Có lỗi xảy ra');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi gửi đánh giá');
+                });
+            });
+            formSubmitInitialized = true;
+        }
+    }
+
+    // Star rating handler
+    function initStarRating() {
+        const stars = document.querySelectorAll('.review-star');
+        
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                selectedRating = parseInt(this.dataset.rating);
+                document.getElementById('rating-input').value = selectedRating;
+                updateStarDisplay();
+            });
+            
+            star.addEventListener('mouseenter', function() {
+                const rating = parseInt(this.dataset.rating);
+                highlightStars(rating);
+            });
+        });
+
+        const starContainer = document.getElementById('star-rating-container');
+        if (starContainer) {
+            starContainer.addEventListener('mouseleave', function() {
+                updateStarDisplay();
+            });
+        }
+    }
+
+    function highlightStars(rating) {
+        document.querySelectorAll('.review-star').forEach((star, index) => {
+            if (index < rating) {
+                star.classList.remove('far', 'text-gray-300');
+                star.classList.add('fas', 'text-yellow-400');
+            } else {
+                star.classList.remove('fas', 'text-yellow-400');
+                star.classList.add('far', 'text-gray-300');
+            }
+        });
+    }
+
+    function updateStarDisplay() {
+        highlightStars(selectedRating);
+    }
+
+    // Preview images
+    function previewImages(input) {
+        const preview = document.getElementById('image-preview');
+        preview.innerHTML = '';
+        
+        if (input.files) {
+            Array.from(input.files).slice(0, 5).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML += `<img src="${e.target.result}" class="w-full h-20 object-cover rounded-lg">`;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    }
+
+    // Mark helpful
+    function markHelpful(reviewId) {
+        fetch(`/review/${reviewId}/helpful`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`helpful-${reviewId}`).textContent = data.helpful_count;
+            }
+        });
+    }
+
+    // Show/hide reply form
+    function showReplyForm(reviewId) {
+        document.getElementById(`reply-form-${reviewId}`).classList.remove('hidden');
+    }
+
+    function hideReplyForm(reviewId) {
+        document.getElementById(`reply-form-${reviewId}`).classList.add('hidden');
+    }
+
+    // Submit reply
+    function submitReply(e, reviewId) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        
+        fetch(`/review/${reviewId}/reply`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                hideReplyForm(reviewId);
+                currentPage = 1;
+                loadReviews();
+            } else {
+                alert(data.error || 'Có lỗi xảy ra');
+            }
+        });
+    }
+
+    // View image in modal
+    function viewImage(url) {
+        window.open(url, '_blank');
+    }
+
+    function increaseQty() {
+        const qtyInput = document.getElementById('qty');
+        const max = parseInt(qtyInput.max);
+        if (qtyInput.value < max) {
+            qtyInput.value = parseInt(qtyInput.value) + 1;
+        }
+    }
+
+    function decreaseQty() {
+        const qtyInput = document.getElementById('qty');
+        if (qtyInput.value > 1) {
+            qtyInput.value = parseInt(qtyInput.value) - 1;
+        }
+    }
+
+    // Color images mapping
+    const colorImages = {{ product.color_images|tojson }};
+    const mainImage = document.querySelector('.w-full.h-96');
+
+    // Handle color selection
+    document.querySelectorAll('.color-option').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const selectedColor = this.dataset.color;
+            if (colorImages && colorImages[selectedColor]) {
+                mainImage.src = colorImages[selectedColor];
+            }
+        });
+    });
+
+    // Toggle like/unlike (NEW)
+    function toggleLike(reviewId) {
+        fetch(`/review/${reviewId}/helpful`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`helpful-${reviewId}`).textContent = data.helpful_count;
+                
+                const icon = document.getElementById(`like-icon-${reviewId}`);
+                const btn = document.getElementById(`like-btn-${reviewId}`);
+                
+                if (data.liked) {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas');
+                    btn.classList.remove('text-gray-600');
+                    btn.classList.add('text-indigo-600');
+                } else {
+                    icon.classList.remove('fas');
+                    icon.classList.add('far');
+                    btn.classList.remove('text-indigo-600');
+                    btn.classList.add('text-gray-600');
+                }
+            } else {
+                alert(data.error || 'Có lỗi xảy ra');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Show/hide reply form (NEW)
+    function showReplyForm(reviewId) {
+        document.getElementById(`reply-form-${reviewId}`).classList.remove('hidden');
+    }
+
+    function hideReplyForm(reviewId) {
+        document.getElementById(`reply-form-${reviewId}`).classList.add('hidden');
+    }
+
+    // Submit reply (NEW)
+    function submitReply(e, reviewId) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        
+        fetch(`/review/${reviewId}/reply`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Có lỗi xảy ra');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Edit reply (NEW)
+    function editReply(replyId) {
+        document.getElementById(`reply-text-${replyId}`).style.display = 'none';
+        document.getElementById(`edit-reply-form-${replyId}`).classList.remove('hidden');
+    }
+
+    function cancelReplyEdit(replyId) {
+        document.getElementById(`reply-text-${replyId}`).style.display = 'block';
+        document.getElementById(`edit-reply-form-${replyId}`).classList.add('hidden');
+    }
+
+    function saveReplyEdit(replyId) {
+        const comment = document.getElementById(`edit-reply-input-${replyId}`).value.trim();
+        
+        if (!comment) {
+            alert('Nội dung phản hồi không được để trống');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('comment', comment);
+        
+        fetch(`/reply/${replyId}/edit`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Có lỗi xảy ra');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Delete reply (NEW)
+    function deleteReply(replyId) {
+        if (!confirm('Bạn có chắc muốn xóa phản hồi này?')) {
+            return;
+        }
+        
+        fetch(`/reply/${replyId}/delete`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Có lỗi xảy ra');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+</script>
+{% endblock %}

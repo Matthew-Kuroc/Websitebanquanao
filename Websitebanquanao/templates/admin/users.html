@@ -1,0 +1,92 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Tài khoản{% endblock %}
+
+{% block title %}Quản lý tài khoản - Admin{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold">Quản lý tài khoản</h2>
+    <a href="/admin/add-user" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+        <i class="fas fa-plus mr-2"></i>Thêm tài khoản
+    </a>
+</div>
+
+<!-- Filter tabs -->
+    <div class="mb-6 flex space-x-4 border-b">
+        <a href="?role=all" class="px-4 py-2 {% if not role or role == 'all' %}border-b-2 border-blue-600 text-blue-600{% else %}text-gray-600 hover:text-blue-600{% endif %}">
+            Tất cả ({{ all_count }})
+        </a>
+        <a href="?role=admin" class="px-4 py-2 {% if role == 'admin' %}border-b-2 border-blue-600 text-blue-600{% else %}text-gray-600 hover:text-blue-600{% endif %}">
+            Admin ({{ admin_count }})
+        </a>
+        <a href="?role=staff" class="px-4 py-2 {% if role == 'staff' %}border-b-2 border-blue-600 text-blue-600{% else %}text-gray-600 hover:text-blue-600{% endif %}">
+            Nhân viên ({{ staff_count }})
+        </a>
+        <a href="?role=user" class="px-4 py-2 {% if role == 'user' %}border-b-2 border-blue-600 text-blue-600{% else %}text-gray-600 hover:text-blue-600{% endif %}">
+            Khách hàng ({{ user_count }})
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <table class="min-w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tên</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SĐT</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vai trò</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày tạo</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for user in users %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ user.email }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ user.name }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ user.phone or '-' }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full
+                            {% if user.role == 'admin' %}bg-purple-100 text-purple-800
+                            {% elif user.role == 'staff' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {% if user.role == 'admin' %}Admin
+                            {% elif user.role == 'staff' %}Nhân viên
+                            {% else %}Khách hàng{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ user.created_at[:10] if user.created_at else '-' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <a href="/admin/edit-user/{{ user.email }}" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <i class="fas fa-edit"></i> Sửa
+                        </a>
+                        {% if user.email != session.user.email %}
+                        <form action="/admin/delete-user" method="POST" class="inline" onsubmit="return confirm('Bạn có chắc muốn xóa tài khoản này?')">
+                            <input type="hidden" name="email" value="{{ user.email }}">
+                            <button type="submit" class="text-red-600 hover:text-red-900">
+                                <i class="fas fa-trash"></i> Xóa
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                        Không có tài khoản nào
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

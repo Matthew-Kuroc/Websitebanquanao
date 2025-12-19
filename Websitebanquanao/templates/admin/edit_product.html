@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Sửa sản phẩm - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+    <h1 class="text-3xl font-bold mb-6">Sửa sản phẩm</h1>
+
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+        <form method="POST" enctype="multipart/form-data" id="edit-product-form">
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Tên sản phẩm *</label>
+                <input type="text" name="name" value="{{ product.name }}" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Giá *</label>
+                    <input type="number" name="price" value="{{ product.price }}" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Giá cũ</label>
+                    <input type="number" name="old_price" value="{{ product.old_price }}" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Danh mục *</label>
+                <input type="text" name="category" value="{{ product.category }}" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Hình ảnh sản phẩm</label>
+                
+                <!-- Current Image -->
+                <div class="mb-3">
+                    <p class="text-sm text-gray-600 mb-2">Ảnh hiện tại:</p>
+                    <img src="{{ product.image }}" alt="{{ product.name }}" class="max-w-xs rounded-lg border" id="current-image">
+                </div>
+                
+                <!-- Upload New Image -->
+                <div class="mb-3">
+                    <label class="block w-full">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition" id="upload-area">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-gray-600 mb-1">Nhấp để tải ảnh mới</p>
+                            <p class="text-sm text-gray-500">PNG, JPG, GIF, WEBP (tối đa 16MB)</p>
+                            <input type="file" name="image_file" id="image_file" accept="image/*" class="hidden" onchange="previewImage(event)">
+                        </div>
+                    </label>
+                </div>
+                
+                <!-- Image Preview -->
+                <div id="image-preview" class="hidden mb-3">
+                    <p class="text-sm text-gray-600 mb-2">Ảnh mới:</p>
+                    <img id="preview-img" src="" alt="Preview" class="max-w-xs rounded-lg border">
+                    <button type="button" onclick="removeImage()" class="mt-2 text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i> Hủy ảnh mới
+                    </button>
+                </div>
+                
+                <!-- Or use URL -->
+                <div class="text-center text-gray-500 mb-2">hoặc</div>
+                <input type="text" name="image" id="image_url" value="{{ product.image }}"
+                       placeholder="Nhập URL hình ảnh mới"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Mô tả</label>
+                <textarea name="description" rows="4" 
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">{{ product.description }}</textarea>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Số lượng tồn kho</label>
+                <input type="number" name="stock" value="{{ product.stock }}" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Kích thước (phân cách bởi dấu phẩy)</label>
+                <input type="text" name="sizes" value="{{ product.sizes|join(',') }}" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <p class="text-sm text-gray-500 mt-1">Ví dụ: S,M,L,XL</p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 font-semibold mb-2">Màu sắc (phân cách bởi dấu phẩy)</label>
+                <input type="text" name="colors" value="{{ product.colors|join(',') }}" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <p class="text-sm text-gray-500 mt-1">Ví dụ: Đen,Trắng,Xám</p>
+            </div>
+
+            <div class="mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" name="featured" value="1" {% if product.featured %}checked{% endif %}
+                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <span class="ml-2 text-gray-700">Sản phẩm nổi bật</span>
+                </label>
+            </div>
+
+            <div class="flex space-x-4">
+                <button type="submit" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                    Cập nhật sản phẩm
+                </button>
+                <a href="/admin/products" class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition text-center">
+                    Hủy
+                </a>
+            </div>
+        </form>
+
+        <!-- Delete Product -->
+        <form action="/admin/delete-product" method="POST" class="mt-6 pt-6 border-t" 
+              onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?')">
+            <input type="hidden" name="product_id" value="{{ product.id }}">
+            <button type="submit" class="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition">
+                <i class="fas fa-trash mr-2"></i>Xóa sản phẩm
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+// Click to open file dialog
+document.getElementById('upload-area').addEventListener('click', function() {
+    document.getElementById('image_file').click();
+});
+
+// Drag and drop
+const uploadArea = document.getElementById('upload-area');
+
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('border-blue-500', 'bg-blue-50');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        document.getElementById('image_file').files = files;
+        previewImage({ target: { files: files } });
+    }
+});
+
+// Preview image
+function previewImage(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('preview-img').src = e.target.result;
+            document.getElementById('image-preview').classList.remove('hidden');
+            document.getElementById('current-image').style.opacity = '0.5';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Remove image
+function removeImage() {
+    document.getElementById('image_file').value = '';
+    document.getElementById('preview-img').src = '';
+    document.getElementById('image-preview').classList.add('hidden');
+    document.getElementById('current-image').style.opacity = '1';
+}
+</script>
+{% endblock %}

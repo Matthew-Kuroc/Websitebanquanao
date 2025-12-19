@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Sản phẩm - Fashion Store{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            {% if page_title %}
+                {{ page_title }}
+            {% else %}
+                Tất cả sản phẩm
+            {% endif %}
+        </h1>
+        <p class="text-gray-600">Khám phá bộ sưu tập thời trang đa dạng của chúng tôi</p>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+        <!-- Sidebar Filters -->
+        <div class="lg:w-1/4">
+            <div class="bg-white rounded-lg shadow-sm p-6 sticky top-24">
+                <!-- Categories -->
+                <div class="mb-6">
+                    <h3 class="font-semibold text-lg mb-4">Danh mục</h3>
+                    <div class="space-y-2">
+                        <a href="{{ url_for('products') }}" class="block py-2 px-3 rounded hover:bg-red-50 {% if not category %}bg-red-100 text-red-700{% else %}text-gray-700{% endif %}">
+                            Tất cả danh mục
+                        </a>
+                        {% for cat in get_categories() %}
+                        <a href="{{ url_for('products') }}?category={{ cat }}" class="block py-2 px-3 rounded hover:bg-red-50 {% if category == cat %}bg-red-100 text-red-700{% else %}text-gray-700{% endif %}">
+                            {{ cat }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Price Range -->
+                <div class="mb-6">
+                    <h3 class="font-semibold text-lg mb-4">Mức giá</h3>
+                    <div class="space-y-2">
+                        <a href="{{ url_for('products') }}{% if category %}?category={{ category }}{% endif %}" class="block py-2 px-3 rounded hover:bg-red-50 {% if not price_range %}bg-red-100 text-red-700{% else %}text-gray-700{% endif %}">
+                            Tất cả mức giá
+                        </a>
+                        <a href="{{ url_for('products') }}{% if category %}?category={{ category }}&{% else %}?{% endif %}price=0-200000" class="block py-2 px-3 rounded hover:bg-red-50 {% if price_range == '0-200000' %}bg-red-100 text-red-700{% else %}text-gray-700{% endif %}">
+                            Dưới 200.000đ
+                        </a>
+                        <a href="{{ url_for('products') }}{% if category %}?category={{ category }}&{% else %}?{% endif %}price=200000-500000" class="block py-2 px-3 rounded hover:bg-red-50 {% if price_range == '200000-500000' %}bg-red-100 text-red-700{% else %}text-gray-700{% endif %}">
+                            200.000đ - 500.000đ
+                        </a>
+                        <a href="{{ url_for('products') }}{% if category %}?category={{ category }}&{% else %}?{% endif %}price=500000-999999999" class="block py-2 px-3 rounded hover:bg-red-50 {% if price_range == '500000-999999999' %}bg-red-100 text-red-700{% else %}text-gray-700{% endif %}">
+                            Trên 500.000đ
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Sort Options -->
+                <div class="mb-6">
+                    <h3 class="font-semibold text-lg mb-4">Sắp xếp</h3>
+                    <div class="space-y-2">
+                        <a href="{{ url_for('products') }}{% if category or price_range %}?{% if category %}category={{ category }}{% if price_range %}&{% endif %}{% endif %}{% if price_range %}price={{ price_range }}{% endif %}{% endif %}" class="block py-2 px-3 rounded hover:bg-red-50 {% if not sort %}bg-red-100 text-red-700{% else %}text-gray-700{% endif %}">
+                            Mặc định
+                        </a>
+                        <a href="{{ url_for('products') }}{% if category or price_range %}?{% if category %}category={{ category }}{% if price_range %}&{% endif %}{% endif %}{% if price_range %}price={{ price_range }}{% if sort %}&{% endif %}{% endif %}{% else %}?{% endif %}sort=price_asc" class="block py-2 px-3 rounded hover:bg-red-50 {% if sort == 'price_asc' %}bg-red-100 text-red-700{% else %}text-gray-700{% endif %}">
+                            Giá: Thấp đến cao
+                        </a>
+                        <a href="{{ url_for('products') }}{% if category or price_range %}?{% if category %}category={{ category }}{% if price_range %}&{% endif %}{% endif %}{% if price_range %}price={{ price_range }}{% if sort %}&{% endif %}{% endif %}{% else %}?{% endif %}sort=price_desc" class="block py-2 px-3 rounded hover:bg-red-50 {% if sort == 'price_desc' %}bg-red-100 text-red-700{% else %}text-gray-700{% endif %}">
+                            Giá: Cao đến thấp
+                        </a>
+                        <a href="{{ url_for('products') }}{% if category or price_range %}?{% if category %}category={{ category }}{% if price_range %}&{% endif %}{% endif %}{% if price_range %}price={{ price_range }}{% if sort %}&{% endif %}{% endif %}{% else %}?{% endif %}sort=popular" class="block py-2 px-3 rounded hover:bg-red-50 {% if sort == 'popular' %}bg-red-100 text-red-700{% else %}text-gray-700{% endif %}">
+                            Bán chạy nhất
+                        </a>
+                        <a href="{{ url_for('products') }}{% if category or price_range %}?{% if category %}category={{ category }}{% if price_range %}&{% endif %}{% endif %}{% if price_range %}price={{ price_range }}{% if sort %}&{% endif %}{% endif %}{% else %}?{% endif %}sort=rating" class="block py-2 px-3 rounded hover:bg-red-50 {% if sort == 'rating' %}bg-red-100 text-red-700{% else %}text-gray-700{% endif %}">
+                            Đánh giá cao nhất
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="lg:w-3/4">
+            <!-- Search and Results Info -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div class="text-sm text-gray-600">
+                    {% if search %}
+                        <p>Kết quả tìm kiếm cho "<span class="font-semibold">{{ search }}</span>"</p>
+                    {% endif %}
+                    <p>Hiển thị <span class="font-semibold">{{ products|length }}</span> sản phẩm</p>
+                </div>
+                
+                <!-- Mobile Sort Dropdown -->
+                <div class="lg:hidden">
+                    <select onchange="window.location.href=this.value" class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="{{ url_for('products') }}{% if category or price_range %}?{% if category %}category={{ category }}{% if price_range %}&{% endif %}{% endif %}{% if price_range %}price={{ price_range }}{% endif %}{% endif %}">Sắp xếp</option>
+                        <option value="{{ url_for('products') }}{% if category or price_range %}?{% if category %}category={{ category }}{% if price_range %}&{% endif %}{% endif %}{% if price_range %}price={{ price_range }}{% if sort %}&{% endif %}{% endif %}{% else %}?{% endif %}sort=price_asc">Giá: Thấp đến cao</option>
+                        <option value="{{ url_for('products') }}{% if category or price_range %}?{% if category %}category={{ category }}{% if price_range %}&{% endif %}{% endif %}{% if price_range %}price={{ price_range }}{% if sort %}&{% endif %}{% endif %}{% else %}?{% endif %}sort=price_desc">Giá: Cao đến thấp</option>
+                        <option value="{{ url_for('products') }}{% if category or price_range %}?{% if category %}category={{ category }}{% if price_range %}&{% endif %}{% endif %}{% if price_range %}price={{ price_range }}{% if sort %}&{% endif %}{% endif %}{% else %}?{% endif %}sort=popular">Bán chạy nhất</option>
+                        <option value="{{ url_for('products') }}{% if category or price_range %}?{% if category %}category={{ category }}{% if price_range %}&{% endif %}{% endif %}{% if price_range %}price={{ price_range }}{% if sort %}&{% endif %}{% endif %}{% else %}?{% endif %}sort=rating">Đánh giá cao nhất</option>
+                    </select>
+                </div>
+            </div>
+
+            {% if products %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for product in products %}
+                <div class="bg-white rounded-2xl shadow-md overflow-hidden product-card border border-gray-100">
+                    <div class="relative">
+                        {% if product.old_price > product.price %}
+                        <span class="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold sale-badge z-10">
+                            -{{ ((product.old_price - product.price) / product.old_price * 100)|int }}%
+                        </span>
+                        {% endif %}
+                        {% set in_wishlist = product.id in get_wishlist() %}
+                        <button onclick="toggleWishlist(this, '{{ product.id }}')"
+                                class="absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-colors bg-white z-10
+                                {% if in_wishlist %} text-red-500 {% else %} text-gray-400 hover:text-red-500 {% endif %}">
+                            <i class="{% if in_wishlist %}fas{% else %}far{% endif %} fa-heart text-xl"></i>
+                        </button>
+                        <a href="{{ url_for('product_detail', pid=product.id) }}">
+                            <img src="{{ product.image }}" alt="{{ product.name }}"
+                                 class="w-full h-64 object-cover hover:scale-105 transition-transform duration-300">
+                        </a>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded">{{ product.category }}</span>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                <span>{{ product.rating }}</span>
+                            </div>
+                        </div>
+                        
+                        <h3 class="font-semibold text-lg mb-3 hover:text-red-600 transition-colors">
+                            <a href="{{ url_for('product_detail', pid=product.id) }}">{{ product.name }}</a>
+                        </h3>
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <div class="font-bold text-red-600 text-xl">{{ format_price(product.price) }}</div>
+                                {% if product.old_price > product.price %}
+                                <div class="text-sm text-gray-400 line-through">{{ format_price(product.old_price) }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="text-sm text-gray-500">Đã bán {{ product.sold }}</div>
+                        </div>
+                        
+                        <form method="post" action="{{ url_for('add_to_cart') }}">
+                            <input type="hidden" name="pid" value="{{ product.id }}">
+                            <input type="hidden" name="color" value="{{ product.colors[0] }}">
+                            <input type="hidden" name="size" value="{{ product.sizes[0] }}">
+                            <input type="hidden" name="qty" value="1">
+                            <button type="submit" class="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center">
+                                <i class="fas fa-cart-plus mr-2"></i>Thêm vào giỏ
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">Không tìm thấy sản phẩm</h3>
+                <p class="text-gray-500 mb-6">Hãy thử tìm kiếm với từ khóa khác hoặc duyệt danh mục khác</p>
+                <a href="{{ url_for('products') }}" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors">
+                    Xem tất cả sản phẩm
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

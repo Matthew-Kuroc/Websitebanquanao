@@ -1,0 +1,64 @@
+
+{% extends "base.html" %}
+
+{% block title %}Sản phẩm yêu thích - Fashion Store{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Sản phẩm yêu thích</h1>
+
+    {% if wishlist_products %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% for product in wishlist_products %}
+        <div class="bg-white rounded-2xl shadow-md overflow-hidden product-card">
+            <div class="relative">
+                {% if product.old_price > product.price %}
+                <span class="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
+                    Sale
+                </span>
+                {% endif %}
+                <button onclick="removeFromWishlist('{{ product.id }}')" 
+                        class="absolute top-3 right-3 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md hover:bg-red-50 transition-colors">
+                    <i class="fas fa-heart text-red-500"></i>
+                </button>
+                <a href="{{ url_for('product_detail', pid=product.id) }}">
+                    <img src="{{ product.image }}" alt="{{ product.name }}" 
+                         class="w-full h-64 object-cover hover:scale-105 transition-transform duration-300">
+                </a>
+            </div>
+            <div class="p-6">
+                <h3 class="font-semibold text-lg mb-2 hover:text-red-600 transition-colors">
+                    <a href="{{ url_for('product_detail', pid=product.id) }}">{{ product.name }}</a>
+                </h3>
+                
+                <div class="flex items-center justify-between mb-3">
+                    <div class="font-bold text-red-600 text-lg">{{ format_price(product.price) }}</div>
+                    {% if product.old_price > product.price %}
+                    <div class="text-sm text-gray-400 line-through">{{ format_price(product.old_price) }}</div>
+                    {% endif %}
+                </div>
+                
+                <form method="post" action="{{ url_for('add_to_cart') }}">
+                    <input type="hidden" name="pid" value="{{ product.id }}">
+                    <input type="hidden" name="color" value="{{ product.colors[0] }}">
+                    <input type="hidden" name="size" value="{{ product.sizes[0] }}">
+                    <button type="submit" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors font-medium">
+                        Thêm vào giỏ
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-16">
+        <i class="fas fa-heart text-6xl text-gray-300 mb-4"></i>
+        <h2 class="text-2xl font-semibold text-gray-600 mb-4">Chưa có sản phẩm yêu thích</h2>
+        <p class="text-gray-500 mb-8">Hãy thêm sản phẩm vào danh sách yêu thích của bạn</p>
+        <a href="{{ url_for('products') }}" class="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold">
+            <i class="fas fa-shopping-bag mr-2"></i>Mua sắm ngay
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

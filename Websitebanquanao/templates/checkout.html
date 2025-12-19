@@ -1,0 +1,175 @@
+
+{% extends "base.html" %}
+
+{% block title %}Thanh toán - Fashion Store{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Thanh toán</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Shipping Information -->
+        <div>
+            <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+                <h3 class="text-xl font-bold mb-4">Thông tin giao hàng</h3>
+                
+                <form method="post" id="checkout-form" class="space-y-4">
+                    <input type="hidden" name="payment_method" id="payment_method" value="cod">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Họ và tên *</label>
+                        <input type="text" name="name" value="{{ user_info.name }}" required
+                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Số điện thoại *</label>
+                        <input type="tel" name="phone" value="{{ user_info.phone }}" required
+                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Địa chỉ *</label>
+                        <textarea name="address" rows="3" required
+                                  class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ user_info.address }}</textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
+                        <textarea name="notes" rows="3" placeholder="Ghi chú về đơn hàng..."
+                                  class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <h3 class="text-xl font-bold mb-4">Phương thức thanh toán</h3>
+                
+                <!-- Continue Shopping / Back to Cart -->
+                <div class="flex gap-3 mb-6">
+                    <a href="/products" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors font-semibold text-center">
+                        <i class="fas fa-shopping-bag mr-2"></i>Tiếp tục mua sắm
+                    </a>
+                    <a href="/cart" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors font-semibold text-center">
+                        <i class="fas fa-shopping-cart mr-2"></i>Quay lại giỏ hàng
+                    </a>
+                </div>
+                
+                <div class="space-y-3 mb-6">
+                    <!-- COD -->
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-indigo-500 transition payment-method-label">
+                        <input type="radio" name="payment_method_radio" value="cod" class="w-5 h-5 text-indigo-600" checked>
+                        <div class="flex-1 ml-3">
+                            <div class="font-semibold">Thanh toán khi nhận hàng (COD)</div>
+                            <div class="text-sm text-gray-600">Thanh toán bằng tiền mặt khi nhận hàng</div>
+                        </div>
+                        <i class="fas fa-money-bill-wave text-green-500 text-2xl ml-2"></i>
+                    </label>
+                    
+                    <!-- Banking with QR -->
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-indigo-500 transition payment-method-label">
+                        <input type="radio" name="payment_method_radio" value="banking" class="w-5 h-5 text-indigo-600">
+                        <div class="flex-1 ml-3">
+                            <div class="font-semibold">Chuyển khoản ngân hàng (QR Code)</div>
+                            <div class="text-sm text-gray-600">Quét mã QR để thanh toán nhanh chóng</div>
+                        </div>
+                        <i class="fas fa-qrcode text-blue-500 text-2xl ml-2"></i>
+                    </label>
+                </div>
+
+                <button type="submit" 
+                        class="w-full bg-indigo-600 text-white py-4 rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-lg flex items-center justify-center">
+                    <i class="fas fa-credit-card mr-3"></i>
+                    <span id="submit-text">Hoàn tất đơn hàng</span>
+                </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div>
+            <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-24">
+                <h3 class="text-xl font-bold mb-4">Đơn hàng của bạn</h3>
+                
+                <div class="space-y-4 mb-6">
+                    {% for item in cart %}
+                    <div class="flex items-center">
+                        <img src="{{ item.image }}" alt="{{ item.name }}" class="w-16 h-16 object-cover rounded-lg">
+                        <div class="flex-1 ml-4">
+                            <h4 class="font-semibold">{{ item.name }}</h4>
+                            <p class="text-sm text-gray-600">{{ item.color }} / {{ item.size }}</p>
+                            <div class="text-sm text-gray-600">Số lượng: {{ item.qty }}</div>
+                        </div>
+                        <div class="font-semibold">{{ format_price(item.price * item.qty) }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="space-y-3 border-t border-gray-200 pt-4">
+                    <div class="flex justify-between">
+                        <span>Tạm tính:</span>
+                        <span>{{ format_price(subtotal) }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Phí vận chuyển:</span>
+                        <span>{{ format_price(shipping) }}</span>
+                    </div>
+                    {% if voucher_discount > 0 %}
+                    <div class="flex justify-between text-green-600">
+                        <span>Giảm giá:</span>
+                        <span>-{{ format_price(voucher_discount) }}</span>
+                    </div>
+                    {% endif %}
+                    <hr>
+                    <div class="flex justify-between text-lg font-bold">
+                        <span>Tổng cộng:</span>
+                        <span>{{ format_price(total) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Update payment method when radio changes
+        document.querySelectorAll('input[name="payment_method_radio"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const paymentMethodInput = document.getElementById('payment_method');
+                paymentMethodInput.value = this.value;
+                console.log('Payment method changed to:', this.value);
+                
+                // Update submit button text
+                const submitText = document.getElementById('submit-text');
+                if (this.value === 'cod') {
+                    submitText.textContent = 'Đặt hàng - Thanh toán khi nhận';
+                } else if (this.value === 'banking') {
+                    submitText.textContent = 'Đặt hàng - Chuyển khoản';
+                }
+                
+                // Update border for selected payment method
+                document.querySelectorAll('.payment-method-label').forEach(label => {
+                    label.classList.remove('border-indigo-500', 'bg-indigo-50');
+                    label.classList.add('border-gray-200');
+                });
+                this.closest('.payment-method-label').classList.remove('border-gray-200');
+                this.closest('.payment-method-label').classList.add('border-indigo-500', 'bg-indigo-50');
+            });
+        });
+        
+        // Add form submit handler to verify payment method
+        document.getElementById('checkout-form').addEventListener('submit', function(e) {
+            const paymentMethod = document.getElementById('payment_method').value;
+            console.log('Form submitting with payment_method:', paymentMethod);
+        });
+        
+        // Initialize - select COD by default
+        const codRadio = document.querySelector('input[name="payment_method_radio"][value="cod"]');
+        if (codRadio) {
+            codRadio.checked = true;
+            codRadio.dispatchEvent(new Event('change'));
+        }
+    });
+</script>
+{% endblock %}
