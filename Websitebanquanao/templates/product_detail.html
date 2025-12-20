@@ -776,28 +776,6 @@
         document.getElementById(`reply-form-${reviewId}`).classList.add('hidden');
     }
 
-    // Submit reply
-    function submitReply(e, reviewId) {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        
-        fetch(`/review/${reviewId}/reply`, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                hideReplyForm(reviewId);
-                currentPage = 1;
-                loadReviews();
-            } else {
-                alert(data.error || 'Có lỗi xảy ra');
-            }
-        });
-    }
-
     // View image in modal
     function viewImage(url) {
         window.open(url, '_blank');

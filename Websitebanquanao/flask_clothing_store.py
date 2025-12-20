@@ -239,9 +239,22 @@ def product_detail(pid):
     can_review = False
     user_reviewed = False
     if user_email:
-        # Kiểm tra đã review chưa
-        existing_review = Review.query.filter_by(product_id=pid, user_email=user_email).first()
-        user_reviewed = existing_review is not None
+        reviews_count = Review.query.filter_by(product_id=pid, user_email=user_email).count()
+        
+        purchased_count = 0
+        user_orders = Order.query.filter_by(user_email=user_email, status='completed').all()
+        # Update code
+        for order in user_orders:
+                order_items = json.loads(order.items) if order.items else []
+                for item in order_items:
+                    if str(item.get('product_id')) == str(pid) or str(item.get('id')) == str(pid):
+                        can_review = True
+                        purchased_item = item
+                        purchased_count += 1  
+                        break
+        
+
+        user_reviewed = reviews_count >= purchased_count
         
         if not user_reviewed:
             user_orders = Order.query.filter_by(
@@ -514,9 +527,20 @@ def add_review(pid):
     user_email = session['user']['email']
     
     # Check if user already reviewed this product
-    existing_review = Review.query.filter_by(product_id=pid, user_email=user_email).first()
-    if existing_review:
-        return jsonify({'error': 'Bạn đã đánh giá sản phẩm này rồi'}), 400
+    current_reviews = Review.query.filter_by(product_id=pid, user_email=user_email).count()
+    
+    # 2. Đếm số lần mua thực tế
+    purchased_count = 0
+    user_orders = Order.query.filter_by(user_email=user_email, status='completed').all()
+    for order in user_orders:
+        order_items = json.loads(order.items)
+        if any(str(item.get('product_id')) == str(pid) or str(item.get('id')) == str(pid) for item in order_items):
+            purchased_count += 1
+            
+    # 3. Nếu số review đã bằng hoặc hơn số lần mua -> Chặn
+    if current_reviews >= purchased_count:
+        flash('Bạn đã đánh giá hết các lượt mua. Hãy mua thêm để tiếp tục!', 'warning')
+        return redirect(url_for('product_detail', pid=pid))
     
     # Check if user has purchased this product
     user_orders = Order.query.filter_by(user_email=user_email, status='completed').all()
@@ -571,7 +595,7 @@ def add_review(pid):
     db.session.commit()
     
     flash('Đánh giá của bạn đã được gửi thành công!', 'success')
-    return jsonify({'success': True, 'review': review.to_dict()})
+    return redirect(url_for('product_detail', pid=pid))
 
 @app.route('/review/<int:review_id>/reply', methods=['POST'])
 @staff_required
