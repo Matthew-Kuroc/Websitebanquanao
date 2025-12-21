@@ -14,9 +14,20 @@ import json
 import os
 from werkzeug.utils import secure_filename
 from database import db, init_db, Product, User, Order, Review, ReviewReply, ReviewLike, Voucher
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-please-change-in-production"
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'shopquanao.demo.2025@gmail.com' 
+app.config['MAIL_PASSWORD'] = 'txfn wypd shsc lmtl'
+app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
+
+mail = Mail(app)
+s = URLSafeTimedSerializer(app.secret_key)
 
 # Upload configuration
 UPLOAD_FOLDER = 'Images'
@@ -957,15 +968,64 @@ def register():
     
     return render_template('register.html')
 
+# --- CODE XỬ LÝ QUÊN MẬT KHẨU (MỚI) ---
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
         email = request.form.get('email')
-        # In a real app, you would send a password reset email
-        flash('Nếu email tồn tại, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu', 'success')
+        user = User.query.get(email)
+        
+        if user:
+            # 1. Tạo token hết hạn trong 10 phút (600 giây)
+            token = s.dumps(email, salt='email-recover-key')
+            
+            # 2. Tạo link đặt lại mật khẩu
+            link = url_for('reset_with_token', token=token, _external=True)
+            
+            # 3. Soạn nội dung email
+            msg = Message('Đặt lại mật khẩu - Fashion Store', recipients=[email])
+            msg.body = f'Chào bạn,\n\nBạn đã yêu cầu đặt lại mật khẩu. Vui lòng bấm vào link sau để đổi mật khẩu (Link hết hạn sau 10 phút):\n\n{link}\n\nNếu bạn không yêu cầu, hãy bỏ qua email này.'
+            
+            # 4. Gửi mail
+            try:
+                mail.send(msg)
+                flash('Đã gửi hướng dẫn vào email. Vui lòng kiểm tra hộp thư (cả mục Spam).', 'success')
+            except Exception as e:
+                flash(f'Lỗi khi gửi mail: {str(e)}', 'error')
+        else:
+            # Bảo mật: Vẫn báo thành công dù email không tồn tại
+            flash('Nếu email tồn tại trong hệ thống, chúng tôi đã gửi hướng dẫn.', 'success')
+            
         return redirect('/login')
     
     return render_template('forgot_password.html')
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_with_token(token):
+    try:
+        email = s.loads(token, salt='email-recover-key', max_age=600)
+    except SignatureExpired:
+        flash('Link đặt lại mật khẩu đã hết hạn!', 'error')
+        return redirect(url_for('forgot_password'))
+    except:
+        flash('Link không hợp lệ!', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if password != confirm_password:
+            flash('Mật khẩu xác nhận không khớp', 'error')
+        else:
+            user = User.query.get(email)
+            user.password = password
+            db.session.commit()
+            
+            flash('Đổi mật khẩu thành công! Hãy đăng nhập.', 'success')
+            return redirect('/login')
+            
+    return render_template('reset_token.html', token=token)
 
 @app.route('/logout')
 def logout():
